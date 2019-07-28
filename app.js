@@ -10,20 +10,7 @@ class Book {
 //UI Class: Handels UI tasks
 class UI {
   static displayBooks() {
-    const storedBooks = [
-      {
-        title: "Book One",
-        author: "John Doe",
-        isbn: "2343443"
-      },
-      {
-        title: "Book Two",
-        author: "Jane Doe",
-        isbn: "6788678"
-      }
-    ];
-
-    const books = storedBooks;
+    const books = Store.getBooks();
     books.forEach(book => UI.addBookToList(book));
   }
   static addBookToList(book) {
@@ -55,6 +42,11 @@ class UI {
     const container = document.querySelector(".container");
     const form = document.querySelector("#book-form");
     container.insertBefore(div, form);
+
+    //Remove after 3 seconds
+    setTimeout(() => {
+      document.querySelector(".alert").remove();
+    }, 3000);
   }
   // Clear field after submit
   static clearFields() {
@@ -65,6 +57,41 @@ class UI {
 }
 
 //Storage Class: Handles storage
+
+class Store {
+  static getBooks() {
+    let booksArray;
+    if (localStorage.getItem("books") === null) {
+      booksArray = [];
+    } else {
+      let books = JSON.parse(localStorage.getItem("books"));
+      booksArray = Convert.convertObjectToArrary(books);
+    }
+    return booksArray;
+  }
+
+  static addBook(book) {
+    const books = Store.getBooks();
+    localStorage.setItem("books", JSON.stringify(book));
+  }
+
+  static removeBook(isbn) {
+    const books = Store.getBooks();
+    books.forEach((book, index) => {
+      if (book.isbn === isbn) {
+        books.splic(index, 1);
+      }
+    });
+    localStorage.setItem("books", JSON.stringify(books));
+  }
+}
+
+class Convert {
+  static convertObjectToArray(obj) {
+    const booksArray = Object.keys(obj).map(i => obj[i]);
+    return booksArray;
+  }
+}
 
 //Event: Display Books
 document.addEventListener("DOMContentLoaded", UI.displayBooks);
@@ -79,12 +106,16 @@ document.querySelector("#book-form").addEventListener("submit", e => {
   const isbn = document.querySelector("#isbn").value;
 
   if (title === "" || author === "" || isbn === "") {
-    alert("Please fill all fields");
+    UI.showAlert("Please fill all fields", "danger");
   } else {
     //Instantiate Book
     const book = new Book(title, author, isbn);
 
+    //Add book to UI
     UI.addBookToList(book);
+    //Add book to localStorage
+    Store.addBook(book);
+    UI.showAlert("Book added successfully !!", "success");
     UI.clearFields();
   }
 });
@@ -92,4 +123,6 @@ document.querySelector("#book-form").addEventListener("submit", e => {
 //Event: Remove a book
 document.querySelector("#book-list").addEventListener("click", e => {
   UI.deleteBook(e.target);
+  Store.removeBook(e.target.parentElement.previousElementSibling.textContent);
+  UI.showAlert("Book removed", "success");
 });
